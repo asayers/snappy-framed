@@ -48,6 +48,7 @@ import qualified Codec.Compression.Snappy.Framed.SNZip as SNZip
 import qualified Codec.Compression.Snappy.Framed.SnappyJava as SnappyJava
 import qualified Codec.Compression.Snappy.Framed.SnappyInJava as SnappyInJava
 import qualified Codec.Compression.Snappy.Framed.Comment43 as Comment43
+import qualified Codec.Compression.Snappy.Framed.NoFraming as NoFraming
 
 -- | Decompress a framed Snappy stream, reporting errors.
 decompress :: (Monad m) => ByteString -> Producer ByteString m (Either String ())
@@ -84,11 +85,13 @@ data FramingFormat
     | SnappyJava    -- non-standard   extension: snappy
     | SnappyInJava  -- obsolete       extension: snappy
     | Comment43     -- obsolete       extension: snappy
+    | NoFraming     -- this indicates an unframed snappy stream
     -- TODO (asayers): looks like hadoop-snappy might define its own
     -- format. Investigate.
 
 -- | Attempt to parse the headers of each format in turn. This tells us
--- which format we're using.
+-- which format we're using. If we don't see a header we recognise, we
+-- assume that we've been given an unframed snappy stream.
 parseHeader :: Parser FramingFormat
 parseHeader = msum
     [ Framing2     <$ Framing2.parseHeader
@@ -97,6 +100,7 @@ parseHeader = msum
     , SnappyJava   <$ SnappyJava.parseHeader
     , SnappyInJava <$ SnappyInJava.parseHeader
     , Comment43    <$ Comment43.parseHeader
+    , pure NoFraming
     ]
 
 -- | Parse a single block of the compressed bytestream, returning a segment
@@ -109,3 +113,4 @@ parseBlock = \case
     SnappyJava   -> SnappyJava.parseBlock
     SnappyInJava -> SnappyInJava.parseBlock
     Comment43    -> Comment43.parseBlock
+    NoFraming    -> NoFraming.parseBlock
