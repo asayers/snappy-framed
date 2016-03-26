@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
 
--- | Snappy is a block compression format, meaning that the whole
+-- | This module provides facilities for decoding framed Snappy streams.
+--
+-- Snappy is a block compression format, meaning that the whole
 -- compressed stream must be kept in memory until it is fully decoded [1].
 -- The task of splitting data into a stream of independently-decodable
 -- chunks is handled by the framing format. In addition, this format often
@@ -10,19 +12,17 @@
 -- Unfortunately, for a long time snappy had no official framing format,
 -- and so a number of improvised formats appeared. While there is now
 -- a standard format, many of the historical formats are still in common
--- use. The good news is that these formats thankfully begin with distinct
+-- use. The good news is that these formats mercifully begin with distinct
 -- magic byte sequences, and so can be easily distinguished.
 --
--- This module provides facilities for decoding framed Snappy streams.
+-- The list of formats, and the names given to them, come from the snzip
+-- application (https://github.com/kubo/snzip).
 --
---
--- [1]: In Snappy, the offsets used by back-references may be as large as
+-- \[1\]: In Snappy, the offsets used by back-references may be as large as
 -- a 32-bit word. As a result, a byte in the uncompressed stream can't be
 -- discarded until 4GB of uncompressed data following it has been decoded.
 -- This effectively makes Snappy a block compression format.
 --
--- TODO (asayers): Finish this and release, either in `snappy` or in its
--- own package.
 -- TODO (asayers): Tests
 module Codec.Compression.Snappy.Framed
     ( decompress
