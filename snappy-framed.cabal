@@ -17,6 +17,12 @@ library
   hs-source-dirs:      src
   exposed-modules:
       Codec.Compression.Snappy.Framed
+      Codec.Compression.Snappy.Framed.Comment43
+      Codec.Compression.Snappy.Framed.Framing1
+      Codec.Compression.Snappy.Framed.Framing2
+      Codec.Compression.Snappy.Framed.SNZip
+      Codec.Compression.Snappy.Framed.SnappyInJava
+      Codec.Compression.Snappy.Framed.SnappyJava
   other-modules:
   build-depends:
         base >= 4.8 && < 5
