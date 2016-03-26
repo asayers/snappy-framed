@@ -1,0 +1,24 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Codec.Compression.Snappy.Framed.SNZip</title><link href="ocean.css" rel="stylesheet" type="text/css" title="Ocean" /><script src="haddock-util.js" type="text/javascript"></script><script type="text/javascript">//<![CDATA[
+window.onload = function () {pageLoad();setSynopsis("mini_Codec-Compression-Snappy-Framed-SNZip.html");};
+//]]>
+</script></head><body><div id="package-header"><ul class="links" id="page-menu"><li><a href="src/Codec-Compression-Snappy-Framed-SNZip.html">Source</a></li><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul><p class="caption">snappy-framed-0.1.0.0: Decompression for framed Snappy streams</p></div><div id="content"><div id="module-header"><table class="info"><tr><th>Safe Haskell</th><td>Safe</td></tr><tr><th>Language</th><td>Haskell2010</td></tr></table><p class="caption">Codec.Compression.Snappy.Framed.SNZip</p></div><div id="description"><p class="caption">Description</p><div class="doc"><p>A format developed as part of the snzip application.</p><p>From the docs:</p><pre>The first three bytes are magic characters 'SNZ'.
+
+The fourth byte is the file format version. It is 0x01.
+
+The fifth byte is the order of the block size. The input data is
+divided into fixed-length blocks and each block is compressed by
+snappy. When it is 16 (default value), the block size is 16th power of
+2; 64 kilobytes.
+
+The rest is pairs of a compressed data length and a compressed data
+block The compressed data length is encoded as
+snappy::Varint::Encode32() does. If the length is zero, it is the end
+of data.
+
+Though the rest after the end of data is ignored for now, they may be
+continuously read as a next compressed file as gzip does.
+
+Note that the uncompressed length of each compressed data block must
+be less than or equal to the block size specified by the fifth byte.</pre><p>Example encoding of the string &quot;foobar\n&quot;:</p><pre>00000000  53 4e 5a 01 10 09 07 18  66 6f 6f 62 61 72 0a 00  |SNZ.....foobar..|</pre><p>Reference: <a href="https://github.com/kubo/snzip">https://github.com/kubo/snzip</a></p></div></div><div id="synopsis"><p id="control.syn" class="caption expander" onclick="toggleSection('syn')">Synopsis</p><ul id="section.syn" class="hide" onclick="toggleSection('syn')"><li class="src short"><a href="#v:parseHeader">parseHeader</a> :: <a href="../attoparsec-0.13.0.1/Data-Attoparsec-ByteString.html#t:Parser">Parser</a> ()</li><li class="src short"><a href="#v:parseBlock">parseBlock</a> :: <a href="../attoparsec-0.13.0.1/Data-Attoparsec-ByteString.html#t:Parser">Parser</a> <a href="../bytestring-0.10.6.0/Data-ByteString.html#t:ByteString">ByteString</a></li></ul></div><div id="interface"><h1>Documentation</h1><div class="top"><p class="src"><a name="v:parseHeader" class="def">parseHeader</a> :: <a href="../attoparsec-0.13.0.1/Data-Attoparsec-ByteString.html#t:Parser">Parser</a> () <a href="src/Codec-Compression-Snappy-Framed-SNZip.html#parseHeader" class="link">Source</a></p><div class="doc"><p>Attempt to parse the header. If the header exists, it will be
+ consumed. If not, the parser will fail.</p></div></div><div class="top"><p class="src"><a name="v:parseBlock" class="def">parseBlock</a> :: <a href="../attoparsec-0.13.0.1/Data-Attoparsec-ByteString.html#t:Parser">Parser</a> <a href="../bytestring-0.10.6.0/Data-ByteString.html#t:ByteString">ByteString</a> <a href="src/Codec-Compression-Snappy-Framed-SNZip.html#parseBlock" class="link">Source</a></p><div class="doc"><p>Parse a single block of the compressed bytestream, returning a segment
+ of the uncompressed stream.</p></div></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.16.1</p></div></body></html>

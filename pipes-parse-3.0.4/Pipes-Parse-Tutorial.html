@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Pipes.Parse.Tutorial</title><link href="ocean.css" rel="stylesheet" type="text/css" title="Ocean" /><script src="haddock-util.js" type="text/javascript"></script><script type="text/javascript">//<![CDATA[
+window.onload = function () {pageLoad();setSynopsis("mini_Pipes-Parse-Tutorial.html");};
+//]]>
+</script></head><body><div id="package-header"><ul class="links" id="page-menu"><li><a href="src/Pipes-Parse-Tutorial.html">Source</a></li><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul><p class="caption">pipes-parse-3.0.4: Parsing infrastructure for the pipes ecosystem</p></div><div id="content"><div id="module-header"><table class="info"><tr><th>Safe Haskell</th><td>Safe</td></tr><tr><th>Language</th><td>Haskell98</td></tr></table><p class="caption">Pipes.Parse.Tutorial</p></div><div id="table-of-contents"><p class="caption">Contents</p><ul><li><a href="#g:1">Overview</a></li><li><a href="#g:2">Parsers</a></li><li><a href="#g:3">Lenses</a></li><li><a href="#g:4">Getters</a></li><li><a href="#g:5">Building Lenses</a></li><li><a href="#g:6">Conclusion</a></li></ul></div><div id="description"><p class="caption">Description</p><div class="doc"><p><code>pipes-parse</code> builds upon <code>pipes</code> to add several missing features necessary
+    to implement <code><a href="Pipes-Parse.html#t:Parser">Parser</a></code>s:</p><ul><li>End-of-input detection, so that <code><a href="Pipes-Parse.html#t:Parser">Parser</a></code>s can react to an exhausted input
+      stream</li><li>Leftovers support, which simplifies several parsing problems</li><li>Connect-and-resume, to connect a <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code> to a <code><a href="Pipes-Parse.html#t:Parser">Parser</a></code> and retrieve
+      unused input</li></ul></div></div><div id="synopsis"><p id="control.syn" class="caption expander" onclick="toggleSection('syn')">Synopsis</p><ul id="section.syn" class="hide" onclick="toggleSection('syn')"></ul></div><div id="interface"><h1 id="g:1">Overview</h1><div class="doc"><p><code>pipes-parse</code> centers on three abstractions:</p><ul><li><code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>s, unchanged from <code>pipes</code></li><li><code><a href="Pipes-Parse.html#t:Parser">Parser</a></code>s, which play a role analogous to <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Consumer">Consumer</a></code>s</li><li><code><a href="Lens-Family2.html#v:Lens-39-">Lens'</a></code>es between <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>s, which play a role analogous to
+      <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Pipe">Pipe</a></code>s</li></ul><p>There are four ways to connect these three abstractions:</p><ul><li>Connect <code><a href="Pipes-Parse.html#t:Parser">Parser</a></code>s to <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>s using <code><a href="../mtl-2.2.1/Control-Monad-State-Strict.html#v:runStateT">runStateT</a></code> / <code><a href="../mtl-2.2.1/Control-Monad-State-Strict.html#v:evalStateT">evalStateT</a></code> /
+      <code><a href="../mtl-2.2.1/Control-Monad-State-Strict.html#v:execStateT">execStateT</a></code>:</li></ul><pre>runStateT  :: Parser a m r -&gt; Producer a m x -&gt; m (r, Producer a m x)
+evalStateT :: Parser a m r -&gt; Producer a m x -&gt; m  r
+execStateT :: Parser a m r -&gt; Producer a m x -&gt; m (   Producer a m x)</pre><ul><li>Connect <code><a href="Lens-Family2.html#v:Lens-39-">Lens'</a></code>es to <code><a href="Pipes-Parse.html#t:Parser">Parser</a></code>s using
+      <code><a href="Lens-Family-State-Strict.html#v:zoom">zoom</a></code></li></ul><pre>zoom :: Lens' (Producer a m x) (Producer b m y)
+     -&gt; Parser b m r
+     -&gt; Parser a m r</pre><ul><li>Connect <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>s to <code><a href="Lens-Family2.html#v:Lens-39-">Lens'</a></code>es using (<code><a href="Lens-Family.html#v:-94-.">^.</a></code>) or
+      <code><a href="Lens-Family.html#v:view">view</a></code>:</li></ul><pre>(^.) :: Producer a m x
+     -&gt; Lens' (Producer a m x) (Producer b m y)
+     -&gt; Producer b m y</pre><ul><li>Connect <code><a href="Lens-Family2.html#v:Lens-39-">Lens'</a></code>es to <code><a href="Lens-Family2.html#v:Lens-39-">Lens'</a></code>es using (<code><a href="../base-4.8.2.0/Data-Function.html#v:.">.</a></code>) (i.e.
+      function composition):</li></ul><pre>(.) :: Lens' (Producer a m x) (Producer b m y)
+    -&gt; Lens' (Producer b m y) (Producer c m z)
+    -&gt; Lens' (Producer a m x) (Producer c m z)</pre><p>You can obtain the necessary lens utilities from either:</p><ul><li>The <code>lens-family-core</code> library, importing <code>Lens.Family</code> (for
+      (<code><a href="Lens-Family.html#v:-94-.">^.</a></code>) / <code><a href="Lens-Family.html#v:view">view</a></code> and <code><a href="Lens-Family.html#v:over">over</a></code>) and
+      <code>Lens.Family.State.Strict</code> (for <code><a href="Lens-Family-State-Strict.html#v:zoom">zoom</a></code>), or:</li><li>The <code>lens</code> library, importing <code>Control.Lens</code> (for (<code><a href="Control-Lens.html#v:-94-.">^.</a></code>) /
+      <code><a href="Control-Lens.html#v:view">view</a></code>, <code><a href="Control-Lens.html#v:over">over</a></code> and <code><a href="Control-Lens.html#v:zoom">zoom</a></code>)</li></ul><p>This tutorial uses <code>Lens.Family</code> since it has fewer dependencies and simpler
+    types.</p></div><h1 id="g:2">Parsers</h1><div class="doc"><p><code><a href="Pipes-Parse.html#t:Parser">Parser</a></code>s handle end-of-input and pushback by storing a <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code> in a
+    <code><a href="../mtl-2.2.1/Control-Monad-State-Strict.html#t:StateT">StateT</a></code> layer:</p><pre>type Parser a m r = forall x . StateT (Producer a m x) m r</pre><p>To draw a single element from the underlying <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>, use the <code><a href="Pipes-Parse.html#v:draw">draw</a></code>
+    command:</p><pre>draw :: Monad m =&gt; Parser a m (Maybe a)</pre><p><code><a href="Pipes-Parse.html#v:draw">draw</a></code> returns the next element from the <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code> wrapped in <code><a href="../base-4.8.2.0/Data-Maybe.html#v:Just">Just</a></code> or
+    returns <code><a href="../base-4.8.2.0/Data-Maybe.html#v:Nothing">Nothing</a></code> if the underlying <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code> is empty.  Here's an example
+    <code><a href="Pipes-Parse.html#t:Parser">Parser</a></code> written using <code><a href="Pipes-Parse.html#v:draw">draw</a></code> that retrieves the first two elements from a
+    stream:</p><pre>import Pipes.Parse
+
+drawTwo :: Monad m =&gt; Parser a m (Maybe a, Maybe a)
+drawTwo = do
+    mx &lt;- draw
+    my &lt;- draw
+    return (mx, my)
+
+-- or: drawTwo = liftM2 (,) draw draw</pre><p>Since a <code><a href="Pipes-Parse.html#t:Parser">Parser</a></code> is just a <code><a href="../mtl-2.2.1/Control-Monad-State-Strict.html#t:StateT">StateT</a></code> action, you run a <code><a href="Pipes-Parse.html#t:Parser">Parser</a></code> using the
+    same run functions as <code><a href="../mtl-2.2.1/Control-Monad-State-Strict.html#t:StateT">StateT</a></code>:</p><pre>-- Feed a 'Producer' to a 'Parser', returning the result and leftovers
+runStateT  :: Parser a m r -&gt; Producer a m x -&gt; m (r, Producer a m x)
+
+-- Feed a 'Producer' to a 'Parser', returning only the result
+evalStateT :: Parser a m r -&gt; Producer a m x -&gt; m  r
+
+-- Feed a 'Producer' to a 'Parser', returning only the leftovers
+execStateT :: Parser a m r -&gt; Producer a m x -&gt; m (   Producer a m x)</pre><p>All three of these functions require a <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code> which we feed to the
+    <code><a href="Pipes-Parse.html#t:Parser">Parser</a></code>.  For example, we can feed standard input:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>evalStateT drawTwo Pipes.Prelude.stdinLn
+</code></strong>Pink&lt;Enter&gt;
+Elephants&lt;Enter&gt;
+(Just &quot;Pink&quot;,Just &quot;Elephants&quot;)
+</pre><p>The result is wrapped in a <code><a href="../base-4.8.2.0/Data-Maybe.html#t:Maybe">Maybe</a></code> because <code><a href="Pipes-Parse.html#v:draw">draw</a></code> can fail if the <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>
+    is empty:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>evalStateT drawTwo (yield 0)
+</code></strong>(Just 0,Nothing)
+</pre><p>Parsing might not necessarily consume the entire stream.  We can use
+    <code><a href="../mtl-2.2.1/Control-Monad-State-Strict.html#v:runStateT">runStateT</a></code> or <code><a href="../mtl-2.2.1/Control-Monad-State-Strict.html#v:execStateT">execStateT</a></code> to retrieve unused elements that our parser does
+    not consume:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>import Pipes
+</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>(result, unused) &lt;- runStateT drawTwo (each [1..4])
+</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>-- View the parsed result
+</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>result
+</code></strong>(Just 1,Just 2)
+<code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>-- Now print the leftovers
+</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>runEffect $ for unused (lift . print)
+</code></strong>3
+4
+</pre></div><h1 id="g:3">Lenses</h1><div class="doc"><p><code>pipes-parse</code> also provides a convenience function for testing purposes that
+    draws all remaining elements and returns them as a list:</p><pre>drawAll :: Monad m =&gt; Parser a m [a]</pre><p>For example:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>import Pipes
+</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>import Pipes.Parse
+</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>evalStateT drawAll (each [1..10])
+</code></strong>[1,2,3,4,5,6,7,8,9,10]
+</pre><p>However, this function is not recommended in general because it loads the
+    entire input into memory, which defeats the purpose of streaming parsing.</p><p>You can instead use <code><a href="Pipes-Parse.html#v:foldAll">foldAll</a></code> if you wish to fold all input elements into a
+    single result:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>evalStateT (foldAll (+) 0 id) (each [1..10])
+</code></strong>55
+</pre><p>You can also use the <code>foldl</code> package to simplify writing more complex folds:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>import Control.Applicative
+</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>import Control.Foldl as L
+</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>evalStateT (purely foldAll (liftA2 (,) L.sum L.maximum)) (each [1..10])
+</code></strong>(55,Just 10)
+</pre><p>But what if you wanted to draw or fold just the first three elements from
+    an infinite stream instead of the entire input?  This is what lenses are
+    for:</p><pre>import Lens.Family
+import Lens.Family.State.Strict
+import Pipes
+import Pipes.Parse
+
+import Prelude hiding (splitAt, span)
+
+drawThree :: Monad m =&gt; Parser a m [a]
+drawThree = zoom (splitAt 3) drawAll</pre><p><code><a href="Lens-Family-State-Strict.html#v:zoom">zoom</a></code> lets you delimit a <code><a href="Pipes-Parse.html#t:Parser">Parser</a></code> using a
+    <code><a href="Lens-Family2.html#v:Lens-39-">Lens'</a></code>.  The above code says to limit <code><a href="Pipes-Parse.html#v:drawAll">drawAll</a></code> to a subset of
+    the input, in this case the first three elements:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>evalStateT drawThree (each [1..])
+</code></strong>[1,2,3]
+</pre><p><code><a href="Pipes-Parse.html#v:splitAt">splitAt</a></code> is a <code><a href="Lens-Family2.html#v:Lens-39-">Lens'</a></code> with the following type:</p><pre>splitAt
+    :: Monad m
+    =&gt; Int -&gt; Lens' (Producer a m x) (Producer a m (Producer a m x))</pre><p>The easiest way to understand <code><a href="Pipes-Parse.html#v:splitAt">splitAt</a></code> is to study what happens when you
+    use it as a getter:</p><pre>view (splitAt 3) :: Producer a m x -&gt; Producer a m (Producer a m x) </pre><p>In this context, <code>(splitAt 3)</code> behaves like <code><a href="Pipes-Parse.html#v:splitAt">splitAt</a></code> from the Prelude,
+    except instead of splitting a list it splits a <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>.  Here's an
+    example of how you can use <code><a href="Pipes-Parse.html#v:splitAt">splitAt</a></code>:</p><pre>outer :: Monad m =&gt; Producer Int m (Producer Int m ())
+outer = each [1..6] ^. splitAt 3</pre><p>The above definition of <code>outer</code> is exactly equivalent to:</p><pre>outer = do
+    each [1..3]
+    return (each [4..6])</pre><p>We can prove this by successively running the outer and inner <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>
+    layers:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>-- Print all the elements in the outer layer and return the inner layer
+</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>inner &lt;- runEffect $ for outer (lift . print)
+</code></strong>1
+2
+3
+<code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>-- Now print the elements in the inner layer
+</code></strong><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>runEffect $ for inner (lift . print)
+</code></strong>4
+5
+6
+</pre><p>We can also uses lenses to modify <code><a href="Pipes-Parse.html#t:Parser">Parser</a></code>s, using
+    <code><a href="Lens-Family-State-Strict.html#v:zoom">zoom</a></code>.  When we combine
+    <code><a href="Lens-Family-State-Strict.html#v:zoom">zoom</a></code> with <code>(splitAt 3)</code> we limit a parser to the
+    the first three elements of the stream.  When the parser is done
+    <code><a href="Lens-Family-State-Strict.html#v:zoom">zoom</a></code> also returns unused elements back to the
+    original stream.  We can demonstrate this using the following example
+    parser:</p><pre>splitExample :: Monad m =&gt; Parser a m ([a], Maybe a, [a])
+splitExample = do
+    x &lt;- zoom (splitAt 3) drawAll
+    y &lt;- zoom (splitAt 3) draw
+    z &lt;- zoom (splitAt 3) drawAll
+    return (x, y, z)</pre><p>The second parser begins where the first parser left off:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>evalStateT splitExample (each [1..])
+</code></strong>([1,2,3],Just 4,[5,6,7])
+</pre><p><code><a href="Pipes-Parse.html#v:span">span</a></code> behaves the same way, except that it uses a predicate and takes as
+    many consecutive elements as possible that satisfy the predicate:</p><pre>spanExample :: Monad m =&gt; Parser Int m (Maybe Int, [Int], Maybe Int)
+spanExample = do
+    x &lt;- zoom (span (&gt;= 4)) draw
+    y &lt;- zoom (span (&lt;  4)) drawAll
+    z &lt;- zoom (span (&gt;= 4)) draw
+    return (x, y, z)</pre><p>Note that even if the first parser fails, subsequent parsers can still
+    succeed because they operate under a different lens:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>evalStateT spanExample (each [1..])
+</code></strong>(Nothing,[1,2,3],Just 4)
+</pre><p>You can even nest <code><a href="Lens-Family-State-Strict.html#v:zoom">zoom</a></code>s, too:</p><pre>nestExample :: Monad m =&gt; Parser Int m (Maybe Int, [Int], Maybe Int)
+nestExample = zoom (splitAt 2) spanExample</pre><p>All the parsers from <code>spanExample</code> now only see a subset of the input,
+    namely the first two elements:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>evalStateT nestExample (each [1..])
+</code></strong>(Nothing,[1,2],Nothing)
+</pre></div><h1 id="g:4">Getters</h1><div class="doc"><p>Not all transformations are reversible.  For example, consider the following
+    contrived function:</p><pre>import Pipes
+import qualified Pipes.Prelude as P
+
+map' :: Monad m =&gt; (a -&gt; b) -&gt; Producer a m r -&gt; Producer b m r
+map' f p = p &gt;-&gt; P.map f</pre><p>Given a function of type <code>(a -&gt; b)</code>, we can transform a stream of <code>a</code>'s into
+    a stream of <code>b</code>'s, but not the other way around.  Transformations which are
+    not reversible and cannot be modeled as <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Pipe">Pipe</a></code>s can only be modeled as
+    functions between <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>s.  However, <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Pipe">Pipe</a></code>s are preferable to functions
+    between <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>s when possible because <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Pipe">Pipe</a></code>s can transform both
+    <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>s and <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Consumer">Consumer</a></code>s.</p><p>If you prefer, you can use lens-like syntax for functions between
+    <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>s by promoting them to <code>Getter</code>s using <code><a href="Lens-Family.html#v:to">to</a></code>:</p><pre>import Lens.Family
+
+example :: Monad m =&gt; Producer Int m ()
+example = each [1..3] ^. to (map' (*2))</pre><p>However, a function of <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>s (or the equivalent <code>Getter</code>) cannot be
+    used transform <code><a href="Pipes-Parse.html#t:Parser">Parser</a></code>s (using <code><a href="Lens-Family-State-Strict.html#v:zoom">zoom</a></code> or
+    otherwise) .  This reflects the fact that such a transformation cannot be
+    applied in reversed.</p></div><h1 id="g:5">Building Lenses</h1><div class="doc"><p>Lenses are very easy to write if you are willing to depend on either the
+    <code>lens-family</code> or <code>lens</code> library.  Both of these libraries provide an
+    <code><a href="Lens-Family2-Unchecked.html#v:iso">iso</a></code> function that you can use to assemble your own
+    lenses.  You only need two functions which reversibly transform back and
+    forth between a stream of <code>a</code>s and a stream of <code>b</code>s:</p><pre>-- &quot;Forward&quot;
+fw :: Producer a m x -&gt; Producer b m y
+
+-- &quot;Backward&quot;
+bw :: Producer b m y -&gt; Producer a m x</pre><p>... such that:</p><pre>fw . bw = id
+
+bw . fw = id</pre><p>You can then convert them to a <code><a href="Lens-Family2.html#v:Lens-39-">Lens'</a></code> using
+    <code><a href="Lens-Family2-Unchecked.html#v:iso">iso</a></code>:</p><pre>import Lens.Family2 (Lens')
+import Lens.Family2.Unchecked (iso)
+
+lens :: Lens' (Producer a m x) (Producer b m y)
+lens = iso fw bw</pre><p>You can even do this without incurring any dependencies if you rewrite the
+    above code like this:</p><pre>-- This type synonym requires the 'RankNTypes' extension
+type Lens' a b = forall f . Functor f =&gt; (b -&gt; f b) -&gt; (a -&gt; f a)
+
+lens :: Lens' (Producer a m x) (Producer b m y)
+lens k p = fmap bw (k (fw p))</pre><p>This is what <code>pipes-parse</code> does internally, and you will find several
+    examples of this pattern in the source code of the <a href="Pipes-Parse.html">Pipes.Parse</a> module.</p><p>Lenses defined using either approach will work with both the <code>lens</code> and
+    <code>lens-family</code> libraries.</p></div><h1 id="g:6">Conclusion</h1><div class="doc"><p><code>pipes-parse</code> introduces core idioms for <code>pipes</code>-based parsing.  These
+    idioms reuse <code><a href="../pipes-4.1.8/Pipes-Core.html#t:Producer">Producer</a></code>s, but introduce two new abstractions:
+    <code><a href="Lens-Family2.html#v:Lens-39-">Lens'</a></code>es and <code><a href="Pipes-Parse.html#t:Parser">Parser</a></code>s.</p><p>This library is very minimal and only contains datatype-agnostic parsing
+    utilities, so this tutorial does not explore the full range of parsing
+    tricks using lenses.  For example, you can also use lenses to change the
+    element type.</p><p>Several downstream libraries provide more specific functionality, including:</p><ul><li><code>pipes-binary</code>: Lenses and parsers for <code>binary</code> values</li><li><code>pipes-attoparsec</code>: Converts <code>attoparsec</code> parsers to <code>pipes</code> parsers</li><li><code>pipes-aeson</code>: Lenses and parsers for JSON values</li><li><code>pipes-bytestring</code>: Lenses and parsers for byte streams</li><li><code>pipes-text</code>: Lenses and parsers for text encodings</li></ul><p>To learn more about <code>pipes-parse</code>, ask questions, or follow development, you
+    can subscribe to the <code>haskell-pipes</code> mailing list at:</p><p><a href="https://groups.google.com/forum/#!forum/haskell-pipes">https://groups.google.com/forum/#!forum/haskell-pipes</a></p><p>... or you can mail the list directly at:</p><p><a href="mailto:haskell-pipes@googlegroups.com">mailto:haskell-pipes@googlegroups.com</a></p></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.16.1</p></div></body></html>

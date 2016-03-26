@@ -1,0 +1,25 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Codec.Compression.Snappy.Framed.SnappyInJava</title><link href="ocean.css" rel="stylesheet" type="text/css" title="Ocean" /><script src="haddock-util.js" type="text/javascript"></script><script type="text/javascript">//<![CDATA[
+window.onload = function () {pageLoad();setSynopsis("mini_Codec-Compression-Snappy-Framed-SnappyInJava.html");};
+//]]>
+</script></head><body><div id="package-header"><ul class="links" id="page-menu"><li><a href="src/Codec-Compression-Snappy-Framed-SnappyInJava.html">Source</a></li><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul><p class="caption">snappy-framed-0.1.0.0: Decompression for framed Snappy streams</p></div><div id="content"><div id="module-header"><table class="info"><tr><th>Safe Haskell</th><td>Safe</td></tr><tr><th>Language</th><td>Haskell2010</td></tr></table><p class="caption">Codec.Compression.Snappy.Framed.SnappyInJava</p></div><div id="description"><p class="caption">Description</p><div class="doc"><p>A format developed as part of the snappy java library.</p><p>From the docs:</p><pre>The output format is the stream header &quot;snappy\0&quot; followed by one or
+more compressed blocks of data, each of which is preceded by a seven
+byte header.
+
+The first byte of the header is a flag indicating if the block is
+compressed or not. A value of 0x00 means uncompressed, and 0x01 means
+compressed.
+
+The second and third bytes are the size of the block in the stream as
+a big endian number. This value is never zero as empty blocks are
+never written. The maximum allowed length is 32k (1 &lt;&lt; 15).
+
+The remaining four byes are crc32c checksum of the user input data
+masked with the following function: {@code ((crc &gt;&gt;&gt; 15) | (crc &lt;&lt;
+17)) + 0xa282ead8 }
+
+An uncompressed block is simply copied from the input, thus
+guaranteeing that the output is never larger than the input (not
+including the header).</pre><p>Example encoding of the string &quot;foobar\n&quot;:</p><pre>00000000  73 6e 61 70 70 79 00 00  00 07 3a bb 17 0a 66 6f  |snappy....:...fo|
+00000010  6f 62 61 72 0a                                    |obar.|</pre><p>Reference: <a href="https://github.com/dain/snappy">https://github.com/dain/snappy</a></p></div></div><div id="synopsis"><p id="control.syn" class="caption expander" onclick="toggleSection('syn')">Synopsis</p><ul id="section.syn" class="hide" onclick="toggleSection('syn')"><li class="src short"><a href="#v:parseHeader">parseHeader</a> :: <a href="../attoparsec-0.13.0.1/Data-Attoparsec-ByteString.html#t:Parser">Parser</a> ()</li><li class="src short"><a href="#v:parseBlock">parseBlock</a> :: <a href="../attoparsec-0.13.0.1/Data-Attoparsec-ByteString.html#t:Parser">Parser</a> <a href="../bytestring-0.10.6.0/Data-ByteString.html#t:ByteString">ByteString</a></li></ul></div><div id="interface"><h1>Documentation</h1><div class="top"><p class="src"><a name="v:parseHeader" class="def">parseHeader</a> :: <a href="../attoparsec-0.13.0.1/Data-Attoparsec-ByteString.html#t:Parser">Parser</a> () <a href="src/Codec-Compression-Snappy-Framed-SnappyInJava.html#parseHeader" class="link">Source</a></p><div class="doc"><p>Attempt to parse the header. If the header exists, it will be
+ consumed. If not, the parser will fail.</p></div></div><div class="top"><p class="src"><a name="v:parseBlock" class="def">parseBlock</a> :: <a href="../attoparsec-0.13.0.1/Data-Attoparsec-ByteString.html#t:Parser">Parser</a> <a href="../bytestring-0.10.6.0/Data-ByteString.html#t:ByteString">ByteString</a> <a href="src/Codec-Compression-Snappy-Framed-SnappyInJava.html#parseBlock" class="link">Source</a></p><div class="doc"><p>Parse a single block of the compressed bytestream, returning a segment
+ of the uncompressed stream.</p></div></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.16.1</p></div></body></html>
