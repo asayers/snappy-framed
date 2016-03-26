@@ -1,3 +1,11 @@
+# snappy-framed
+
+This library provides decoding support for framed snappy streams. It is in a
+state of partial usefulness (see [Current Status](#current-status) below). Go
+to https://asayers.github.io/snappy-framed/ for documentation.
+
+## Discussion
+
 Snappy is a block compression format, meaning that the whole compressed stream
 must be kept in memory until it is fully decoded [1]. The task of splitting
 data into a stream of independently-decodable chunks is handled by the framing
