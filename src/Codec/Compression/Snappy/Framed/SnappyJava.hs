@@ -34,7 +34,9 @@ import Data.Int
 -- consumed. If not, the parser will fail.
 parseHeader :: Parser ()
 parseHeader = do
-    void $ AP.string "\x82SNAPPY\x00\x00\x00\x00\x01\x00\x00\x00\x01"
+    void $ AP.string "\x82SNAPPY\x00"    -- 8-byte magic header
+    void $ AP.string "\x00\x00\x00\x01"  -- 4-byte version number
+    void $ AP.string "\x00\x00\x00\x01"  -- 4-byte min-compatible version
 
 -- | Parse a single block of the compressed bytestream, returning a segment
 -- of the uncompressed stream.
