@@ -20,6 +20,7 @@ library
       Codec.Compression.Snappy.Framed.Comment43
       Codec.Compression.Snappy.Framed.Framing1
       Codec.Compression.Snappy.Framed.Framing2
+      Codec.Compression.Snappy.Framed.NoFraming
       Codec.Compression.Snappy.Framed.SNZip
       Codec.Compression.Snappy.Framed.SnappyInJava
       Codec.Compression.Snappy.Framed.SnappyJava
